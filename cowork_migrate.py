@@ -940,6 +940,60 @@ def cmd_import_session(args):
     print(_c(f"\nDeshacer:  python3 cowork_migrate.py rollback --manifest \"{mpath}\"", C.DIM))
     return 0
 
+def cmd_move_chat(args):
+    """Mueve (copia) un chat/sesión a otro Team para que aparezca en su lista de chats."""
+    base = Path(args.base_dir)
+    teams = enumerate_teams(base)
+    src = resolve_team(base, args.from_team, teams)
+    dst = resolve_team(base, args.to_team, teams)
+    if src.org == dst.org and src.account == dst.account:
+        raise MigrateError("Origen y destino son el mismo Team.")
+    sess = find_session(src, args.session)
+
+    head(f"Mover chat: «{sess['title'] or sess['dir'].name}»")
+    print(f"  de: {src.label}\n  a:  {dst.label}")
+
+    is_sandbox = str(base.resolve()) != str(DEFAULT_BASE.resolve())
+    if args.dry_run:
+        info("  (dry-run: chequeo de app omitido)")
+    elif not is_sandbox and not args.force:
+        if claude_app_running():
+            raise MigrateError("La app Claude está abierta. Ciérrala (Cmd+Q) y reintenta.")
+        ok("App Claude cerrada")
+    if not dst.org_dir.is_dir():
+        raise MigrateError("El Team destino no existe en disco. Inicia sesión en él una vez.")
+    if (dst.org_dir / sess["dir"].name).exists():
+        raise MigrateError("Ese chat ya existe en el destino.")
+    ok("Sin colisión")
+
+    print(f"  • Copiar chat con su transcript (audit.jsonl) a {dst.label}")
+    if args.dry_run:
+        warn("--dry-run: no se escribió nada."); return 0
+    if not args.yes:
+        if input(_c("¿Mover el chat? [s/N] ", C.YLW)).strip().lower() not in ("s","si","sí","y","yes"):
+            warn("Cancelado."); return 1
+
+    log_dir = base / LOGS_DIRNAME / f"movechat-{now_stamp()}"
+    manifest = Manifest(meta={"tool": "cowork-migrate move-chat", "timestamp": now_stamp(),
+        "source": {"account": src.account, "org": src.org, "name": src.name,
+                   "session": sess["dir"].name},
+        "dest": {"account": dst.account, "org": dst.org, "name": dst.name}})
+    try:
+        copyfile_tracked(sess["json"], dst.org_dir / sess["json"].name, manifest)
+        if sess["dir"].is_dir():
+            copytree_tracked(sess["dir"], dst.org_dir / sess["dir"].name, manifest,
+                             ignore=ignore_session)
+        ok("Chat copiado con transcript")
+    except Exception as e:
+        err(f"Fallo: {e}"); warn("Rollback…")
+        manifest.rollback(); manifest.save(log_dir / "manifest-failed.json")
+        return 2
+    mpath = manifest.save(log_dir / "manifest.json")
+    ok(f"Chat «{sess['title']}» movido a {dst.label}")
+    print(f"  manifest: {mpath}")
+    print(_c(f"Deshacer: python3 cowork_migrate.py rollback --manifest \"{mpath}\"", C.DIM))
+    return 0
+
 def merge_workspace_memory(src, dst, manifest):
     src_mem = src.org_dir / "agent" / "memory"
     if not src_mem.is_dir():
@@ -1135,9 +1189,29 @@ def cmd_wizard(args):
         except MigrateError as e:
             err(f"«{sp.name}»: {e}")
             rc = 1
+    # --- Chats sueltos (opcional) ---
+    sessions = list_sessions(src)
+    if sessions and _ask(f"\n¿Mover también CHATS de «{src.name}» a «{dst.name}»? (si/no)", "no").lower() in ("si", "sí", "s", "y"):
+        head(f"Chats en «{src.name}»:")
+        for i, s in enumerate(sessions):
+            print(f"  {i}) {s['title'] or '(sin título)'}")
+        csel = _ask("¿Cuáles? (números separados por coma, o 'todos')", "todos")
+        if csel.lower() in ("todos", "all", "*"):
+            cchosen = sessions
+        else:
+            cidx = [int(x) for x in re.findall(r"\d+", csel)]
+            cchosen = [sessions[i] for i in cidx if 0 <= i < len(sessions)]
+        for s in cchosen:
+            ns = argparse.Namespace(base_dir=str(base), from_team=str(src.index),
+                to_team=str(dst.index), session=s["id"], dry_run=dry, yes=True, force=args.force)
+            try:
+                rc = cmd_move_chat(ns) or rc
+            except MigrateError as e:
+                err(f"chat «{s['title']}»: {e}"); rc = 1
+
     head("Fin del asistente")
     if dry:
-        info("Fue una simulación. Vuelve a ejecutar y elige 'no' en la simulación para migrar de verdad.")
+        info("Fue una simulación. Vuelve a ejecutar y elige 'no' en la simulación para hacerlo de verdad.")
     return rc
 
 def build_parser():
@@ -1197,6 +1271,15 @@ def build_parser():
     ims.add_argument("--yes", "-y", action="store_true")
     ims.add_argument("--force", action="store_true")
     ims.set_defaults(func=cmd_import_session)
+
+    mc = sub.add_parser("move-chat", help="Mueve un chat/sesión a otro Team (aparece en su lista de chats).")
+    mc.add_argument("--from", dest="from_team", required=True)
+    mc.add_argument("--to", dest="to_team", required=True)
+    mc.add_argument("--session", required=True, help="sessionId o título del chat.")
+    mc.add_argument("--dry-run", action="store_true")
+    mc.add_argument("--yes", "-y", action="store_true")
+    mc.add_argument("--force", action="store_true")
+    mc.set_defaults(func=cmd_move_chat)
 
     sis = sub.add_parser("list-sessions", help="Lista los chats/sesiones de un Team.")
     sis.add_argument("--team", required=True)

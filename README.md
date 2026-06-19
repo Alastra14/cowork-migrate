@@ -9,19 +9,32 @@ mergea la memoria del workspace y te deja un reporte de los conectores a reconec
 
 > Un solo archivo Python, **sin dependencias** (solo stdlib, Python ≥ 3.9). macOS.
 
-## 🚀 Inicio rápido (para compañeros, sin terminal)
+## 🚀 Inicio rápido (para compañeros)
 
-1. **Descarga** este repositorio (botón verde **Code → Download ZIP**) y descomprímelo.
-2. **Cierra la app Claude** por completo (Cmd + Q).
-3. Asegúrate de haber **iniciado sesión una vez** en el Team destino (el ambiente nuevo) dentro de Claude.
-4. Doble clic en **`Migrar-proyectos-Cowork.command`**. Se abre un asistente que te pregunta:
-   de qué Team sacar proyectos, a cuál llevarlos y cuáles mover. Primero hace una **simulación**.
-   - La primera vez macOS puede bloquearlo: clic derecho → **Abrir** → **Abrir**.
-5. Abre Claude, cambia al Team destino y verás tus proyectos.
+**Requisitos:** macOS con Python 3 (ya viene incluido), Claude Desktop con Cowork, y haber
+**iniciado sesión al menos una vez** tanto en el Team de origen como en el **Team destino (el
+ambiente nuevo)** — así ambos existen en tu equipo.
 
-> Requiere macOS con Python 3 (ya viene en macOS). No instala nada ni necesita permisos especiales.
+### Forma recomendada (1 línea, la más confiable)
 
-Equivalente en terminal: `python3 cowork_migrate.py wizard`
+1. **Cierra Claude** por completo (Cmd + Q).
+2. Abre la app **Terminal** (Spotlight → "Terminal") y pega esto:
+
+```bash
+cd ~/Downloads && curl -fsSL https://raw.githubusercontent.com/Alastra14/cowork-migrate/main/cowork_migrate.py -o cowork_migrate.py && python3 cowork_migrate.py wizard
+```
+
+3. Sigue el **asistente**: te pregunta de qué Team sacar, a cuál llevar, qué **proyectos** y,
+   si quieres, qué **chats**. Hace una **simulación** primero y luego lo real (escribes `MIGRAR`).
+4. Abre Claude, cambia al Team destino y revisa.
+
+El script es **un solo archivo sin dependencias**; no instala nada ni pide permisos del sistema.
+
+### Alternativa (doble clic)
+
+Descarga el repo (**Code → Download ZIP**), descomprime y doble clic en
+**`Migrar-proyectos-Cowork.command`**. La primera vez: clic derecho → **Abrir** → **Abrir**.
+⚠️ El ZIP de GitHub a veces quita el permiso de ejecución; si no abre, usa la forma de 1 línea de arriba.
 
 ## ⚠️ Antes de empezar (importante)
 
@@ -72,6 +85,10 @@ de tu Team principal:
 ```bash
 # Ver los chats de un Team
 python3 cowork_migrate.py list-sessions --team "Ternova DIRECTORES"
+
+# Mover un chat suelto a otro Team (aparece en su lista de chats, con su conversación)
+python3 cowork_migrate.py move-chat --from "Ternova DIRECTORES" --to "Ternova" \
+    --session "Cockpit reverse engineering" --dry-run   # quita --dry-run para ejecutar
 
 # Crear un proyecto nuevo en "Ternova" con los archivos de ese chat (y opcionalmente el chat)
 python3 cowork_migrate.py import-session \
