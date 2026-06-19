@@ -814,6 +814,11 @@ def ignore_artifacts(_dir, names):
     """Excluye secretos + el dir interno .claude al copiar outputs de una sesión."""
     return [n for n in names if n in DENYLIST_NAMES or n == ".claude"]
 
+def ignore_session(_dir, names):
+    """Al copiar una sesión (chat) SÍ incluimos el transcript (audit.jsonl) y su
+    .audit-key — son la conversación del propio usuario. Solo descartamos basura."""
+    return [n for n in names if n == ".DS_Store"]
+
 def cmd_import_session(args):
     """Crea un proyecto NUEVO en el Team destino a partir de un chat/sesión."""
     base = Path(args.base_dir)
@@ -902,8 +907,8 @@ def cmd_import_session(args):
             if sess["dir"].is_dir():
                 tgt = dst.org_dir / sess["dir"].name
                 if not tgt.exists():
-                    copytree_tracked(sess["dir"], tgt, manifest, ignore=ignore_denylist)
-            ok("Chat copiado (experimental)")
+                    copytree_tracked(sess["dir"], tgt, manifest, ignore=ignore_session)
+            ok("Chat copiado (con transcript)")
 
         # 3) spaces.json destino (commit)
         new_space = {
@@ -980,7 +985,7 @@ def copy_session(cand, dst, manifest):
     if sdir.is_dir():
         target = dst.org_dir / sdir.name
         if not target.exists():
-            copytree_tracked(sdir, target, manifest, ignore=ignore_denylist)
+            copytree_tracked(sdir, target, manifest, ignore=ignore_session)
 
 def verify_space(team, space_id, name, folders):
     spaces = load_spaces(team)

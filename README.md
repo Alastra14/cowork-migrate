@@ -32,8 +32,10 @@ Equivalente en terminal: `python3 cowork_migrate.py wizard`
    formato podría cambiar en futuras versiones de la app.
 4. **Las credenciales de los conectores NO se migran** (están encriptadas): hay que reautenticarlos
    en el Team destino. El programa te da la lista.
-5. **El chat es experimental** (`--include-chat`): puede no aparecer en el destino. Los artefactos
-   y la memoria sí migran de forma fiable.
+5. **El chat sí se mueve** (`--include-chat`): la conversación vive en `audit.jsonl` (JSON plano)
+   dentro de la carpeta de la sesión, así que se copia completa junto con su `.audit-key`. La única
+   incógnita es si la app lo **re-renderiza igual** tras moverlo a otro Team; pruébalo abriendo Claude.
+   Los artefactos y la memoria migran de forma totalmente fiable.
 
 ## Uso
 
@@ -110,7 +112,7 @@ destino con nuevo UUID, y con `--include-chat` copia también la sesión (experi
 | **Memoria del proyecto** | `spaces/{id}/memory/` → copia limpia. |
 | **Memoria del workspace** | `agent/memory/` → **merge sin pisar**; archivos distintos se guardan con sufijo `.from-<Team>.md`; `MEMORY.md` por append delimitado, con backup. |
 | **Conectores** | Solo **reporte** "reconecta esto" (credenciales nunca se migran ni se loguean). |
-| **Chat** | Opt-in `--include-chat`, experimental, sin copiar nunca `.audit-key`/`audit.jsonl`. |
+| **Chat** | Opt-in `--include-chat`. Copia la carpeta de la sesión **con el transcript** (`audit.jsonl`, JSON plano) y su `.audit-key`. Lo único no garantizado es que la app lo re-renderice idéntico en el destino. |
 
 ## Seguridad
 
