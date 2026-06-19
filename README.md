@@ -1,40 +1,53 @@
 # cowork-migrate
 
-Migrador de **proyectos de Claude Cowork** de un **Team a otro** en la misma Mac.
+Migrador de **proyectos de Claude Cowork** de un **Team a otro** en la misma computadora.
 
 Cowork guarda todo localmente (JSON + archivos) y **no** tiene función oficial de
 exportar/compartir entre Teams. Este programa lo hace por ti de forma **segura y reversible**:
 copia la entrada del proyecto al `spaces.json` del Team destino, copia la memoria del proyecto,
 mergea la memoria del workspace y te deja un reporte de los conectores a reconectar.
 
-> Un solo archivo Python, **sin dependencias** (solo stdlib, Python ≥ 3.9). macOS.
+> Un solo archivo Python, **sin dependencias** (solo stdlib, Python ≥ 3.9). **macOS y Windows.**
+
+> 🎯 **En Ternova el Team destino es: `Ternova`.** Cuando el asistente pregunte a qué Team llevar
+> los proyectos, elige **`Ternova`** (el número en tu lista puede variar — guíate por el nombre).
 
 ## 🚀 Inicio rápido (para compañeros)
 
-**Requisitos:** macOS con Python 3 (ya viene incluido), Claude Desktop con Cowork, y haber
-**iniciado sesión al menos una vez** tanto en el Team de origen como en el **Team destino (el
-ambiente nuevo)** — así ambos existen en tu equipo.
+**Requisitos:** Claude Desktop con Cowork + Python 3, y haber **iniciado sesión al menos una vez**
+tanto en tu Team de origen como en el **Team destino (`Ternova`)** — así ambos existen en tu equipo.
+(Python 3 ya viene en macOS; en Windows instálalo desde python.org marcando *"Add to PATH"*.)
 
-### Forma recomendada (1 línea, la más confiable)
+### macOS — 1 línea (recomendado)
 
 1. **Cierra Claude** por completo (Cmd + Q).
-2. Abre la app **Terminal** (Spotlight → "Terminal") y pega esto:
+2. Abre **Terminal** (Spotlight → "Terminal") y pega:
 
 ```bash
 cd ~/Downloads && curl -fsSL https://raw.githubusercontent.com/Alastra14/cowork-migrate/main/cowork_migrate.py -o cowork_migrate.py && python3 cowork_migrate.py wizard
 ```
 
-3. Sigue el **asistente**: te pregunta de qué Team sacar, a cuál llevar, qué **proyectos** y,
-   si quieres, qué **chats**. Hace una **simulación** primero y luego lo real (escribes `MIGRAR`).
-4. Abre Claude, cambia al Team destino y revisa.
+### Windows — 1 línea (recomendado)
+
+1. **Cierra Claude** por completo.
+2. Abre **PowerShell** (menú Inicio → "PowerShell") y pega:
+
+```powershell
+cd $HOME\Downloads; curl.exe -fsSL https://raw.githubusercontent.com/Alastra14/cowork-migrate/main/cowork_migrate.py -o cowork_migrate.py; python cowork_migrate.py wizard
+```
+
+3. (Ambos) Sigue el **asistente**: de qué Team sacar, a cuál llevar (**`Ternova`**), qué
+   **proyectos** y qué **chats**. Hace una **simulación** primero; para ejecutar escribes `MIGRAR`.
+4. Abre Claude, cambia al Team `Ternova` y revisa.
 
 El script es **un solo archivo sin dependencias**; no instala nada ni pide permisos del sistema.
 
 ### Alternativa (doble clic)
 
-Descarga el repo (**Code → Download ZIP**), descomprime y doble clic en
-**`Migrar-proyectos-Cowork.command`**. La primera vez: clic derecho → **Abrir** → **Abrir**.
-⚠️ El ZIP de GitHub a veces quita el permiso de ejecución; si no abre, usa la forma de 1 línea de arriba.
+Descarga el repo (**Code → Download ZIP**), descomprime y doble clic:
+**`Migrar-proyectos-Cowork.command`** (macOS) o **`Migrar-proyectos-Cowork.bat`** (Windows).
+En macOS la primera vez: clic derecho → **Abrir** → **Abrir**.
+⚠️ El ZIP de GitHub a veces quita el permiso de ejecución en macOS; si no abre, usa la forma de 1 línea.
 
 ## ⚠️ Antes de empezar (importante)
 

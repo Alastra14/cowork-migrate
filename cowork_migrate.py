@@ -11,7 +11,7 @@ Este programa copia un proyecto de un Team (org) a otro de forma SEGURA y REVERS
 backups con timestamp, escritura atómica y rollback.
 
 ⚠️  No es una función oficial de Anthropic. Cierra la app Claude antes de migrar.
-    Solo usa la biblioteca estándar de Python (>=3.9). macOS.
+    Solo usa la biblioteca estándar de Python (>=3.9). macOS y Windows.
 
 Subcomandos:
   list-teams                         Lista los Teams (orgs) detectados en la Mac.
@@ -42,7 +42,17 @@ from pathlib import Path
 # Constantes
 # ----------------------------------------------------------------------------
 
-DEFAULT_BASE = Path.home() / "Library" / "Application Support" / "Claude"
+def default_base():
+    """Ruta del almacén local de Claude según el sistema operativo."""
+    if sys.platform == "darwin":                       # macOS
+        return Path.home() / "Library" / "Application Support" / "Claude"
+    if os.name == "nt":                                # Windows
+        appdata = os.environ.get("APPDATA")
+        return (Path(appdata) / "Claude") if appdata else \
+            Path.home() / "AppData" / "Roaming" / "Claude"
+    return Path.home() / ".config" / "Claude"          # Linux (fallback)
+
+DEFAULT_BASE = default_base()
 SESSIONS_DIRNAME = "local-agent-mode-sessions"
 ACTIVE_ACCOUNT_FILE = "cowork-enabled-cli-ops.json"
 LOGS_DIRNAME = "cowork-migrate-logs"
@@ -439,7 +449,15 @@ def find_space(team, project_selector):
 # ----------------------------------------------------------------------------
 
 def claude_app_running():
-    """True si la app Claude Desktop parece estar abierta (macOS)."""
+    """True si la app Claude Desktop parece estar abierta (macOS y Windows)."""
+    if os.name == "nt":                                # Windows: tasklist
+        try:
+            r = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Claude.exe"],
+                               capture_output=True, text=True)
+            return "Claude.exe" in (r.stdout or "")
+        except FileNotFoundError:
+            return False
+    # macOS / Linux: pgrep
     for pattern in ("Claude", "Claude Helper"):
         try:
             r = subprocess.run(["pgrep", "-x", pattern],
@@ -448,7 +466,6 @@ def claude_app_running():
                 return True
         except FileNotFoundError:
             break
-    # Refuerzo: pgrep -f por el bundle.
     try:
         r = subprocess.run(["pgrep", "-f", "Claude.app/Contents/MacOS/Claude"],
                            capture_output=True, text=True)
